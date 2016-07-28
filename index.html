@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <link rel="stylesheet" href="stylesheets/bootstrap.min.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="stylesheets/index.css"></link>
+    <title>Generate Pin</title>
+  </head>
+  <body>
+    <div class="loadermain">
+      <div class="loader">
+      </div>
+      <h4 style="position:absolute; top:55%; left:45%">Logging In....</h4>
+    </div>
+    <div class="container" style="padding-top:10%">
+      <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-6 well">
+          
+          <form role="form">
+            <div class="form-group">
+              <h2 class="text-center">Generate Pin</h2><hr>
+              <div>
+                <input type="text" id="email" class="form-control" placeholder="Email...">
+                <!-- <span class="input-group-btn">
+                  <button class="btn btn-primary" id="send" type="button">Submit!</button>
+                </span> -->
+              </div>
+              <!-- <div class="alert alert-success" id="sent">A 4-Digit Pin has been sent to you as an email.</div> -->
+            </div>
+            <div class="form-group">
+              <div>
+                <input type="password" id="password" class="form-control" placeholder="Enter your Roll.no...">
+                <!-- <span class="input-group-btn">
+                  <button class="btn btn-primary" id="verify" type="button">Verify!</button>
+                </span> -->
+              </div>
+              <!-- <div class="alert alert-success" id="res">Succesfully Verified!</div> -->
+            </div>
+            <div class="text-center">
+              <button class="btn btn-primary" id="verify" type="button">Verify!</button>              
+            </div>
+          </form>
+        </div>
+        <div class="col-md-3"></div>
+      </div>
+    </div>
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+    <script src="javascripts/jquery-3.1.0.min.js"></script>
+    <script src="javascripts/bootstrap.min.js"></script>
+    <script>if (window.module) module = window.module;</script>
+    <script>
+      var fs = require('fs')
+      fs.exists("userdata.json",function(exists){
+        if(exists){
+          fs.readFile("userdata.json", function(err, userdetails){
+            userdetails = JSON.parse(userdetails);
+            const {ipcRenderer} = require('electron');
+            ipcRenderer.send('details', userdetails);
+          });
+        }else{
+          $(".loadermain").hide();
+        }
+      });
+      $("#verify").click(function(){
+          var data = {};
+          data['username'] = $("#email").val();
+          data['password'] = $("#password").val();
+          const {ipcRenderer} = require('electron');
+          ipcRenderer.send('details', data);
+      });
+    </script>
+  </body>
+</html>

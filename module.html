@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <link rel="stylesheet" href="stylesheets/bootstrap.min.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
+    <!-- <link rel="stylesheet" href="stylesheets/easy-sidebar.css" type="text/css"> -->
+    <link href="stylesheets/simple-sidebar.css" rel="stylesheet">
+    <link rel=stylesheet href="codemirror/doc/docs.css">
+    <link rel="stylesheet" href="codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="stylesheets/index.css"></link>
+    <script src="codemirror/lib/codemirror.js"></script>
+    <script src="codemirror/addon/edit/matchbrackets.js"></script>
+    <script src="codemirror/mode/python/python.js"></script>
+    <title>Generate Pin</title>
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="sidebar-wrapper">
+          <ul id="plist" class="sidebar-nav">
+              <li class="sidebar-brand">
+                  <a href="#">
+                      CSPP Exam - Week 1
+                  </a>
+              </li>
+          </ul>
+      </div>
+      <div id="page-content-wrapper">
+            <div class="container-fluid">
+              <div class="row">
+                  <div class="col-lg-12">
+                      <div class="row">
+                        <div class="col-md-6 text-left">
+                          <h1 id="heading">CSPP Exam - Week 1</h1>
+                        </div>
+                        <div class="col-md-6 text-right"></div>
+                      </div>
+                      <div>
+                        <textarea id="code" name="code"># Instructions</textarea>
+                      </div>
+                  </div>
+              </div><br>
+              <div class='row'>
+                <div class="col-md-6">
+                  <button id="execute" class="btn btn-success">Execute</button>
+                  <button id="reset" class="btn btn-default">Reset</button><br>
+                </div>
+                <div class="col-md-6 text-right">
+                  <button id="save" class="btn btn-primary">Save</button>
+                </div>
+              </div>
+              <h2>Output:</h2>
+              <div class="loader1"></div>
+              <textarea id="output" class="well well-lg" style="height:160px; width:100%; margin-bottom:0px" disabled></textarea>
+            </div>
+        </div>
+        <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+        <script src="javascripts/jquery-3.1.0.min.js"></script>
+        <script src="javascripts/bootstrap.min.js"></script>
+        <script>if (window.module) module = window.module;</script>
+        <script type="text/javascript">
+        $(".loader1").hide();
+        //Loading code editor into a textarea
+        var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+          mode: {name: "python",
+            version: 2,
+            singleLineStringErrors: false},
+          lineNumbers: true,
+          indentUnit: 4,
+          matchBrackets: true
+        });
+
+        //checking for key combinations which may close or minimze the app
+        $(document).ready(function(){
+          $(document).keydown(function(event) {
+              if (event.ctrlKey==true && event.which == '86') {
+                event.preventDefault();
+              }
+          });
+        });
+
+        //reading quizjson and updating programs list
+        const {ipcRenderer} = require('electron');
+        ipcRenderer.send('load');
+        ipcRenderer.once('loaded', (event, data) => {
+          $.each( data['programs'], function( key, val ) {
+            $("#plist").append("<li><a id='" + key + "' class='problem'  href='#'>" + val['title'] + "</a></li>" );
+          });
+
+        });
+
+        //when a program is selected
+        $(document).ready(function(){
+          $('a.problem').click(function(){
+            $("#save").click();
+            $("#reset").val($(this).attr('id'))
+            var content = {}
+            content.option = $(this).text();
+            content.id = $(this).attr('id');
+            const {ipcRenderer} = require('electron');
+            ipcRenderer.send('requestProgram', content);
+            ipcRenderer.once('resultProgram', (event, data) => {
+              $("#heading").html(data.name);
+              editor.getDoc().setValue(data.program);
+            });
+          });
+        });
+
+        //on clicking save button
+        $(document).ready(function(){
+          $('#save').click(function(){
+            $(this).addClass('disabled');
+            var program = {}
+            program.name = $("#heading").text();
+            program.text = editor.getDoc().getValue();
+            const {ipcRenderer} = require('electron');
+            ipcRenderer.send('save', program);
+            ipcRenderer.once('saved', (event, data) => {
+              $("#save").removeClass('disabled');
+            });
+          });
+        });
+
+        //on clicking reset button
+        $(document).ready(function(){
+          $('#reset').click(function(){
+            var content = {}
+            content.option = $('#heading').text();
+            content.id = $(this).val();
+            const {ipcRenderer} = require('electron');
+            ipcRenderer.send('reset', content);
+            ipcRenderer.once('resetres', (event, data) => {
+              editor.getDoc().setValue(data.program);
+            });
+          });
+        });
+
+        var fs = require('fs')
+        fs.readFile("quiz.json", function(err, data){
+          data = JSON.parse(data);
+          // $.each( data['programs'], function( key, val ) {
+          //   $("#plist").append("<li><a id='" + key + "' class='problem'  href='#'>" + val['title'] + "</a></li>" );
+          // });
+          // $('a.problem').click(function(){
+          //   var option = $(this).text();
+          //   var fs = require('fs');
+          //   var str = option.replace(/ /g, '_');
+          //   fs.readFile("userdata.json", function(err, userdetails){
+          //     userdetails = JSON.parse(userdetails);
+          //     var rno = userdetails['password'];
+          //     fs.exists('programs/'+rno+'_'+str+".py", function(exists){
+          //       if (exists) {
+          //         fs.readFile('programs/'+rno+'_'+str+".py",'utf8',function(err, contents){
+          //           var text = contents;
+          //           $("#heading").html(option);
+          //           editor.getDoc().setValue(text);
+          //         });
+          //       }
+          //     });
+          //   });
+          //   var text = data['programs'][$(this).attr('id')]['program'];
+          //   $("#heading").html(option);
+          //   editor.getDoc().setValue(text);
+          // });
+        });
+
+        //on clicking execute button
+        $(document).ready(function(){
+          $('#execute').click(function(){
+            $('#save').click();
+            $("#output").html('');
+            $(".loader1").show();
+            var program = $("#heading").text();
+            const {ipcRenderer} = require('electron');
+            ipcRenderer.send('execute', program);
+            ipcRenderer.once('executed', (event, data) => {
+              $("#output").html(data);
+              $(".loader1").hide();
+            });  
+            // var content = {}
+            // content.option = $('#heading').text();
+            // content.id = $(this).val();
+            // const {ipcRenderer} = require('electron');
+            // ipcRenderer.send('reset', content);
+            // ipcRenderer.once('resetres', (event, data) => {
+            //   editor.getDoc().setValue(data.program);
+            // });
+          });
+        });
+
+        // $("#execute").click(function(){
+        //   $("#output").html('');
+        //   $(".loader1").show();
+        //   var fs = require('fs');
+        //   var str = ($("#heading").text()).replace(/ /g, '_');
+        //   fs.readFile("userdata.json", function(err, userdetails){
+        //     userdetails = JSON.parse(userdetails);
+        //     var rno = userdetails['password'];
+        //     fs.exists('programs/'+rno+'_'+str+".py", function(exists){
+        //       if (exists) {
+        //         fs.rename('programs/'+rno+'_'+str+".py", 'programs/'+rno+'_'+str+"_"+(Date.now() / 1000 | 0).toString()+".py");
+        //         var writeStream = fs.createWriteStream('programs/'+rno+'_'+str+".py");
+        //         writeStream.write(editor.getDoc().getValue());
+        //         writeStream.end();
+        //       }
+        //       else{
+        //         var writeStream = fs.createWriteStream('programs/'+rno+'_'+str+".py");
+        //         writeStream.write(editor.getDoc().getValue());
+        //         writeStream.end();
+        //       }
+        //       var nodeexec = require('child_process').exec;
+        //       nodeexec('python programs/'+rno+'_'+str+'.py', {timeout: 5000, killSignal: 'SIGKILL'}, function callback(error, stdout, stderr){
+        //         $(".loader1").hide();
+        //         if(error){
+        //           $("#output").html(stderr);
+        //         }
+        //         $("#output").append(stdout);
+        //       });
+        //     });
+        //   });        
+        // });
+    </script>
+  </body>
+</html>
